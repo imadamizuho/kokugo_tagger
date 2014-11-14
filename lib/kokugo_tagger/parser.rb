@@ -3,7 +3,7 @@ require 'csv'
 
 module CabochaParser
 	def parse(line)
-		case line
+		case line.chomp
 		when /^#/
 			return parse_excab(line)
 		when /^\*/

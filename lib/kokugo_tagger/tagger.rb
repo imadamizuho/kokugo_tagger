@@ -7,17 +7,19 @@ module KokugoTagger
 		file.each_line do |line|
 			data = CabochaParser.parse(line)
 			method_name = data[:type].downcase.to_sym
-			method(method_name).call(data) if defined?(method_name)
+			method(method_name).call(data) if methods.include?(method_name)
 			puts line
 		end
 	end
 	def chunk(data)
 		@chunks ||= []
 		@chunks << @chunk = data
-		@chunk.update lpos:(@lpos||=0), text:'', pos:nil, pred:nil, conj:nil
+		@lpos ||= 0
+		@chunk.update start:@lpos, end:@lpos, text:'', pos:nil, pred:nil, conj:nil
 	end
 	def token(data)
-		@lpos += 1
+		@lpos += data[:text].size
+		@chunk[:end] = @lpos
 		@chunk[:text] += data[:text]
 		pos data
 		cform data
