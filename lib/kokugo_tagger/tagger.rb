@@ -5,7 +5,7 @@ module KokugoTagger
 	module_function
 	def annotate(file)
 		file.each_line do |line|
-			data = CabochaParser.parse(line)
+			next unless data = CabochaParser.parse(line)
 			method_name = data[:type].downcase.to_sym
 			method(method_name).call(data) if methods.include?(method_name)
 			puts line
