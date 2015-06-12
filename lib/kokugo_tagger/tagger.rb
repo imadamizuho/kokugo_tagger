@@ -25,8 +25,18 @@ module KokugoTagger
 		cform data
 	end
 	def segment_s(data)
+		@segments ||= []
+		@segments << data
+		@last_item = data
+	end
+	def group_s(data)
+		@groups ||= []
+		@groups << data
+		@last_item = data
 	end
 	def attr(data)
+		@last_item[:attributes] ||= []
+		@last_item[:attributes] << data
 	end
 	def eos(data)
 		before_eos
@@ -35,7 +45,7 @@ module KokugoTagger
 			puts '#! ATTR bccwj-kok:pred "%s述語"' % chunk[:pos] if chunk[:pred]
 			puts '#! ATTR bccwj-kok:conj "%s"' % chunk[:conj] if chunk[:conj]
 		end
-		@chunks, @chunk, @lpos, @segments = nil
+		@chunks, @chunk, @lpos, @segments, @groups = nil
 	end
 	def pos(token)
 		case token[:pos]
@@ -61,10 +71,12 @@ module KokugoTagger
 			case token[:text]
 			when 'が'
 				@chunk.update conj:'主語'
+			when 'を', 'に'
+				@chunk.update conj:'補語'
 			when 'の', 'との', 'という', 'といった'
 				@chunk.update conj:'修飾(連体)'
 			else
-				@chunk.update conj:'補語'
+				@chunk.update conj:'修飾(連用)'
 			end
 		when /^(助詞-副助詞|助詞-係助詞)/
 			@chunk.update conj:'修飾(連用)'
@@ -88,6 +100,30 @@ module KokugoTagger
 		end			
 	end
 	def before_eos
+		# BCCWJ-DepPara
+		@chunks.each do |chunk|
+			chunk[:conj] = [chunk[:conj], '断片'].compact.join(':') if chunk[:rel] == 'F'
+			chunk[:conj] = [chunk[:conj], '文節内'].compact.join(':') if chunk[:rel] == 'B'
+			chunk[:conj] = '文末' if chunk[:rel] == 'Z'
+		end
+		# 並列・同格関係
+		@groups ||= []
+		@segments ||= []
+		@groups.each do |group|
+			next unless group[:name] =~ /^(Parallel|Apposition)$/
+			members = group[:member].map{|n| n.to_i}
+			members = @segments.values_at(*members)
+			chunk_ids = members.map do |segment|
+				_end = segment[:end].to_i
+				chunk = @chunks.find{|c| c[:start] < _end and c[:end] >= _end}
+				chunk[:id].to_i if chunk
+			end
+			chunk_ids = chunk_ids.compact.uniq.sort
+			if chunk_ids.size > 1
+				conj = {'Parallel' => '並立', 'Apposition' => '同格'}[group[:name]]
+				chunk_ids[0..-2].each{|cid| @chunks[cid][:conj] = conj}
+			end
+		end
 		# 属性を付与できなかった文節に対して、係り受けを利用して属性を補完
 		# 連用成分を受ける文節を述語とみなす
 		@chunks.each do |chunk|

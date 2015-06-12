@@ -29,10 +29,10 @@ module CabochaParser
 		return excab
 	end
 	def parse_chunk(line)
-		null, id, rel, part, score = line.chomp.split("\s")
-		link, dep = rel[0..-2], rel[-1]
+		null, id, dep, part, score = line.chomp.split("\s")
+		link, rel = dep[0..-2], dep[-1]
 		head, func = part.split('/')
-		chunk = {type: 'CHUNK', id: id, link: link, dep: dep, head: head, func: func, score: score}
+		chunk = {type: 'CHUNK', id: id, link: link, rel: rel, head: head, func: func, score: score}
 		return chunk
 	end
 	def parse_token(line)
