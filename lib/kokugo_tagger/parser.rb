@@ -17,6 +17,7 @@ module CabochaParser
 		end
 	end
 	def parse_excab(line)
+		line = line.gsub('\"', '""')
 		null, type, *data = CSV.parse_line(line.chomp, col_sep:' ')
 		case type
 		when 'SEGMENT', 'SEGMENT_S', 'LINK', 'LINK_S'
