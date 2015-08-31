@@ -39,6 +39,7 @@ module KokugoTagger
 		@last_item[:attributes] << data
 	end
 	def eos(data)
+		return unless @chunks
 		before_eos
 		@chunks.each do |chunk|
 			puts '#! SEGMENT_S bccwj-kok:Bnst %d %d "%s"' % [chunk[:start], chunk[:end], chunk[:text]]
