@@ -1,6 +1,27 @@
 #!/usr/bin/env ruby
 
+require 'optparse'
 require 'kokugo_tagger'
 
-Encoding.default_external = 'UTF-8'
-KokugoTagger.annotate ARGF
+$enc = "UTF-8"
+$model = nil
+$learn = nil
+$valid = nil
+
+OptionParser.new do |opt|
+	Version = "0.1.0"
+	opt.on('-e STR', '--encoding STR', String, 'encoding'){|str| $enc = str }
+	opt.on('-m FILE', '--model FILE', String, 'model file'){|file| $model = file }
+	opt.on('-l DIR', '--learn DIR', String, 'train corpus directory'){|dir| $learn = dir }
+	opt.on('-v DIR', '--valid DIR', String, 'K-fold cross-validation'){|dir| $learn = dir; $valid = 3 }
+	opt.parse!
+end
+
+# $stdin.set_encoding 'UTF-8'
+if $learn and $valid
+	KokugoTagger.validation $learn, $enc, $valid
+elsif $learn
+	KokugoTagger.learn $learn, $model, $enc
+else
+	KokugoTagger.annotate $stdin, $model, $enc
+end
